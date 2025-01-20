@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const QUESTIONS = [
   {
@@ -25,8 +26,21 @@ const QUESTIONS = [
 export const GamePlay = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { teams } = location.state;
   
+  useEffect(() => {
+    if (!location.state?.teams) {
+      toast.error("Please set up teams before starting the game");
+      navigate("/setup");
+      return;
+    }
+  }, [location.state, navigate]);
+
+  // If we don't have teams data, return null to prevent rendering
+  if (!location.state?.teams) {
+    return null;
+  }
+
+  const { teams } = location.state;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [scores, setScores] = useState(teams.map(() => 0));
   const [currentTeam, setCurrentTeam] = useState(0);
