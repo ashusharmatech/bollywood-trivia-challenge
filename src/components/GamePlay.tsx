@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const QUESTIONS = [
   {
@@ -35,7 +41,6 @@ export const GamePlay = () => {
     }
   }, [location.state, navigate]);
 
-  // If we don't have teams data, return null to prevent rendering
   if (!location.state?.teams) {
     return null;
   }
@@ -43,20 +48,23 @@ export const GamePlay = () => {
   const { teams } = location.state;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [scores, setScores] = useState(teams.map(() => 0));
-  const [currentTeam, setCurrentTeam] = useState(0);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showScoreDialog, setShowScoreDialog] = useState(false);
 
-  const handleAnswer = (optionIndex: number) => {
-    if (optionIndex === QUESTIONS[currentQuestion].correct) {
-      const newScores = [...scores];
-      newScores[currentTeam] += 10;
-      setScores(newScores);
-    }
+  const handleTeamAnswer = (teamIndex: number) => {
+    const newScores = [...scores];
+    newScores[teamIndex] += 10;
+    setScores(newScores);
+    setShowScoreDialog(true);
+  };
 
+  const handleNextQuestion = () => {
+    setShowScoreDialog(false);
+    setShowOptions(false);
     if (currentQuestion === QUESTIONS.length - 1) {
       navigate("/winner", { state: { teams, scores } });
     } else {
       setCurrentQuestion(prev => prev + 1);
-      setCurrentTeam((currentTeam + 1) % teams.length);
     }
   };
 
@@ -66,8 +74,13 @@ export const GamePlay = () => {
         {teams.map((team, index) => (
           <div 
             key={index}
-            className={`text-2xl ${currentTeam === index ? "text-primary" : "text-muted-foreground"}`}
+            className="text-2xl flex items-center gap-2"
+            style={{ color: team.color }}
           >
+            <div 
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: team.color }}
+            />
             {team.name}: {scores[index]}
           </div>
         ))}
@@ -82,21 +95,76 @@ export const GamePlay = () => {
       >
         <Card className="w-full max-w-4xl p-8 card-gradient">
           <h2 className="text-4xl mb-8 text-center">{QUESTIONS[currentQuestion].question}</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {QUESTIONS[currentQuestion].options.map((option, index) => (
+          
+          {!showOptions ? (
+            <div className="flex gap-4 justify-center">
               <Button
-                key={index}
-                size="lg"
                 variant="outline"
-                className="text-2xl p-6"
-                onClick={() => handleAnswer(index)}
+                onClick={() => setShowOptions(true)}
+                className="text-xl"
               >
-                {option}
+                Show Options
               </Button>
-            ))}
-          </div>
+              {teams.map((team, index) => (
+                <Button
+                  key={index}
+                  onClick={() => handleTeamAnswer(index)}
+                  className="text-xl"
+                  style={{ 
+                    backgroundColor: team.color,
+                    color: 'white'
+                  }}
+                >
+                  {team.name} Answered
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {QUESTIONS[currentQuestion].options.map((option, index) => (
+                <Button
+                  key={index}
+                  size="lg"
+                  variant="outline"
+                  className="text-2xl p-6"
+                  onClick={() => {
+                    if (index === QUESTIONS[currentQuestion].correct) {
+                      toast.success("Correct Answer!");
+                    } else {
+                      toast.error("Wrong Answer!");
+                    }
+                  }}
+                >
+                  {option}
+                </Button>
+              ))}
+            </div>
+          )}
         </Card>
       </motion.div>
+
+      <Dialog open={showScoreDialog} onOpenChange={setShowScoreDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">Current Scores</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {teams.map((team, index) => (
+              <div 
+                key={index}
+                className="flex justify-between items-center text-xl"
+                style={{ color: team.color }}
+              >
+                <span>{team.name}</span>
+                <span>{scores[index]} points</span>
+              </div>
+            ))}
+          </div>
+          <Button onClick={handleNextQuestion} className="w-full text-xl">
+            Next Question
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
