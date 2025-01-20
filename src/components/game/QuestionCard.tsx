@@ -8,11 +8,12 @@ import { useState } from "react";
 interface QuestionCardProps {
   question: {
     question: string;
-    options: string[];
-    correct: number;
+    hint: string;
+    answer: string;
+    category: string;
   };
-  showOptions: boolean;
-  onShowOptions: () => void;
+  showHint: boolean;
+  onShowHint: () => void;
   teams: Array<{ name: string; color: string }>;
   onTeamAnswer: (teamIndex: number) => void;
   onSkipQuestion: () => void;
@@ -20,13 +21,13 @@ interface QuestionCardProps {
 
 export const QuestionCard = ({ 
   question, 
-  showOptions, 
-  onShowOptions, 
+  showHint, 
+  onShowHint, 
   teams, 
   onTeamAnswer,
   onSkipQuestion
 }: QuestionCardProps) => {
-  const [correctAnswerShown, setCorrectAnswerShown] = useState(false);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
 
   return (
     <motion.div
@@ -45,12 +46,12 @@ export const QuestionCard = ({
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={onShowOptions}
+              onClick={onShowHint}
               className="text-xl hover:bg-accent/20"
-              disabled={correctAnswerShown}
+              disabled={answerRevealed}
             >
               <HelpCircle className="mr-2 h-6 w-6 text-primary" />
-              Show Hints
+              Show Hint
             </Button>
             <Button
               variant="outline"
@@ -63,52 +64,49 @@ export const QuestionCard = ({
           </div>
         </div>
         
-        {showOptions ? (
-          <div className="grid grid-cols-2 gap-4">
-            {question.options.map((option, index) => (
-              <Button
-                key={index}
-                size="lg"
-                variant="outline"
-                className="text-2xl p-6"
-                onClick={() => {
-                  if (index === question.correct) {
-                    toast.success("Correct Answer! Select the team that answered.");
-                    setCorrectAnswerShown(true);
-                    onShowOptions(); // Hide options
-                  } else {
-                    toast.error("Wrong Answer! Try again.");
-                  }
-                }}
-              >
-                {option}
-              </Button>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {teams.map((team, index) => (
-              <Button
-                key={index}
-                onClick={() => {
-                  if (!correctAnswerShown && !showOptions) {
-                    toast.error("Please show hints and select the correct answer first!");
-                    return;
-                  }
-                  onTeamAnswer(index);
-                  setCorrectAnswerShown(false); // Reset for next question
-                }}
-                className="text-xl py-8"
-                style={{ 
-                  backgroundColor: team.color,
-                  color: 'white'
-                }}
-              >
-                {team.name} Answered
-              </Button>
-            ))}
+        {showHint && (
+          <div className="mb-8 p-4 bg-accent/10 rounded-lg">
+            <p className="text-xl text-center">{question.hint}</p>
+            <Button 
+              className="mt-4 w-full text-xl"
+              onClick={() => {
+                setAnswerRevealed(true);
+                toast.success("Answer revealed! Select the team that answered correctly.");
+              }}
+              disabled={answerRevealed}
+            >
+              Reveal Answer
+            </Button>
+            {answerRevealed && (
+              <div className="mt-4 p-4 bg-primary/10 rounded-lg">
+                <p className="text-2xl text-center font-bold text-primary">{question.answer}</p>
+              </div>
+            )}
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-4">
+          {teams.map((team, index) => (
+            <Button
+              key={index}
+              onClick={() => {
+                if (!answerRevealed && !showHint) {
+                  toast.error("Please show hint and reveal the answer first!");
+                  return;
+                }
+                onTeamAnswer(index);
+                setAnswerRevealed(false);
+              }}
+              className="text-xl py-8"
+              style={{ 
+                backgroundColor: team.color,
+                color: 'white'
+              }}
+            >
+              {team.name} Answered
+            </Button>
+          ))}
+        </div>
       </Card>
     </motion.div>
   );
