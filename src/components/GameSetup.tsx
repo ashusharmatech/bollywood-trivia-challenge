@@ -7,6 +7,13 @@ import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const TEAM_COLORS = [
   "#8B5CF6", // Vivid Purple
@@ -19,23 +26,29 @@ const TEAM_COLORS = [
   "#D3E4FD"  // Soft Blue
 ];
 
+const QUESTION_CATEGORIES = [
+  "Funny",
+  "General Knowledge",
+  "Songs",
+  "Movies",
+  "Dialogues"
+];
+
 export const GameSetup = () => {
   const navigate = useNavigate();
   const [teams, setTeams] = useState([
     { name: "", color: TEAM_COLORS[0] },
     { name: "", color: TEAM_COLORS[1] }
   ]);
+  const [questionCount, setQuestionCount] = useState(10);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const addTeam = () => {
     if (teams.length >= 8) {
       toast.error("Maximum 8 teams allowed");
       return;
     }
-    const availableColors = TEAM_COLORS.filter(
-      color => !teams.some(team => team.color === color)
-    );
-    const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
-    setTeams([...teams, { name: "", color: randomColor }]);
+    setTeams([...teams, { name: "", color: TEAM_COLORS[0] }]);
   };
 
   const removeTeam = () => {
@@ -45,11 +58,31 @@ export const GameSetup = () => {
   };
 
   const handleStartGame = () => {
-    if (teams.every(team => team.name.trim())) {
-      navigate("/play", { state: { teams } });
-    } else {
+    if (!teams.every(team => team.name.trim())) {
       toast.error("Please enter names for all teams");
+      return;
     }
+    
+    if (selectedCategories.length === 0) {
+      toast.error("Please select at least one category");
+      return;
+    }
+
+    navigate("/play", { 
+      state: { 
+        teams,
+        questionCount,
+        categories: selectedCategories
+      } 
+    });
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
   };
 
   return (
@@ -59,7 +92,7 @@ export const GameSetup = () => {
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-2xl"
       >
-        <h1 className="title-text text-center mb-8">Team Setup</h1>
+        <h1 className="title-text text-center mb-8">Game Setup 🎮</h1>
         <Card className="p-8 card-gradient">
           {teams.map((team, index) => (
             <div key={index} className="mb-6">
@@ -77,10 +110,36 @@ export const GameSetup = () => {
                     placeholder={`Enter Team ${index + 1} name`}
                   />
                 </div>
-                <div 
-                  className="w-8 h-8 rounded-full mt-8"
-                  style={{ backgroundColor: team.color }}
-                />
+                <div className="flex flex-col items-center">
+                  <Label className="mb-2">Color</Label>
+                  <Select
+                    value={team.color}
+                    onValueChange={(color) => {
+                      const newTeams = [...teams];
+                      newTeams[index].color = color;
+                      setTeams(newTeams);
+                    }}
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <div 
+                        className="w-6 h-6 rounded-full"
+                        style={{ backgroundColor: team.color }}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEAM_COLORS.map((color) => (
+                        <SelectItem key={color} value={color}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-6 h-6 rounded-full"
+                              style={{ backgroundColor: color }}
+                            />
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           ))}
@@ -105,12 +164,40 @@ export const GameSetup = () => {
             </Button>
           </div>
 
+          <div className="mb-8">
+            <Label className="text-xl mb-4 block">Number of Questions 🎯</Label>
+            <Input
+              type="number"
+              min="1"
+              max="50"
+              value={questionCount}
+              onChange={(e) => setQuestionCount(Number(e.target.value))}
+              className="text-xl p-6"
+            />
+          </div>
+
+          <div className="mb-8">
+            <Label className="text-xl mb-4 block">Categories 📚</Label>
+            <div className="flex flex-wrap gap-2">
+              {QUESTION_CATEGORIES.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategories.includes(category) ? "default" : "outline"}
+                  onClick={() => toggleCategory(category)}
+                  className="text-lg p-4"
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <Button 
             size="lg"
             className="w-full text-2xl mt-4 bg-primary hover:bg-primary/90"
             onClick={handleStartGame}
           >
-            Start Game
+            Start Game 🎲
           </Button>
         </Card>
       </motion.div>
