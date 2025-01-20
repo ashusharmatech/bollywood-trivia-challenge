@@ -48,11 +48,6 @@ export const GamePlay = () => {
   const [celebratingTeam, setCelebratingTeam] = useState<number | null>(null);
 
   const handleTeamAnswer = (teamIndex: number) => {
-    if (showOptions) {
-      toast.error("Cannot select team after showing options!");
-      return;
-    }
-    
     const newScores = [...scores];
     newScores[teamIndex] += 10;
     setScores(newScores);
@@ -74,6 +69,11 @@ export const GamePlay = () => {
     }
   };
 
+  const handleSkipQuestion = () => {
+    toast.info("Question skipped!");
+    handleNextQuestion();
+  };
+
   return (
     <div className="game-container">
       <div className="flex justify-between mb-8">
@@ -90,9 +90,10 @@ export const GamePlay = () => {
       <QuestionCard
         question={QUESTIONS[currentQuestion]}
         showOptions={showOptions}
-        onShowOptions={() => setShowOptions(true)}
+        onShowOptions={() => setShowOptions(!showOptions)}
         teams={teams}
         onTeamAnswer={handleTeamAnswer}
+        onSkipQuestion={handleSkipQuestion}
       />
 
       <ScoreDialog
